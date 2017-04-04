@@ -10,7 +10,7 @@ void error_die(const char *sc)
     exit(1);
 }
 
-int startSvr(int *port)
+int startSvr(u_short *port)
 {
     int sockfd = 0;
     struct sockaddr_in myaddr;
@@ -40,6 +40,19 @@ int startSvr(int *port)
 
 int main(int argc, const char *argv[])
 {
+    u_short port = 7700;
+    int server_sock = -1;
+    int client_sock = -1;
+
+    server_sock = startSvr(&port);
+    printf("httpd running on port %d\n", port);
+
+    while (1)
+    {
+        client_sock = accept();
+    }
+
+    close(server_sock);
     
     return 0;
 }
