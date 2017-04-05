@@ -40,24 +40,44 @@ int startSvr(u_short *port)
     return sockfd;
 }
 
-void accept_request(void *pclient)
+int readline(int sockfd, char *buf, int buflen)
 {
-    int client = *(int *)pclient;
-    char c = '\0';
     int n;
+    int idx = 0;
 
-    /*
-    while (1)
+    while (idx < buflen)
     {
-        n = recv(client, &c, 1, 0);
-        if (n <= 0)
+        n = recv(sockfd, buf + idx, 1, 0);
+        if (n <= 0 || *(buf + idx) == '\n')
         {
             break;
         }
-        printf("%c", c);
+        idx++;
     }
-    // */
 
+    if (idx < buflen - 1)
+    {
+        *(buf + idx) = '\0';
+    }
+    else
+    {
+        *(buf + buflen - 1) = '\0';
+    }
+
+    return idx;
+}
+
+void accept_request(void *pclient)
+{
+    int client = *(int *)pclient;
+    char buf[256];
+    int n;
+
+    printf("in request sock=%d\n", client);
+    while ((n=readline(client, buf, 256)) > 0)
+    {
+        printf("line=%d, %s\n", n, buf);
+    }
 }
 
 int main(int argc, const char *argv[])
@@ -66,7 +86,7 @@ int main(int argc, const char *argv[])
     int server_sock = -1;
     int client_sock = -1;
     struct sockaddr_in client_name;
-    int client_name_len = sizeof(struct sockaddr_in);
+    socklen_t client_name_len = sizeof(struct sockaddr_in);
     pthread_t newthread;
 
     server_sock = startSvr(&port);
