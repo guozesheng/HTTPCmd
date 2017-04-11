@@ -67,6 +67,28 @@ int readline(int sockfd, char *buf, int buflen)
     return idx;
 }
 
+int replyhtml(int client)
+{
+    char buf[256];
+
+    sprintf(buf, "HTTP/1.0 200 OK\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "Content-Type: text/html\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "Server: cmdhttpd/0.0.1\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "<html>\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "<body>hello, world</body>\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "</html>\r\n");
+    send(client, buf, strlen(buf), 0);
+
+    return 0;
+}
+
 void accept_request(void *pclient)
 {
     int client = *(int *)pclient;
@@ -74,10 +96,17 @@ void accept_request(void *pclient)
     int n;
 
     printf("in request sock=%d\n", client);
-    while ((n=readline(client, buf, 256)) > 0)
+    while ((n=readline(client, buf, 256)) > 1)
     {
-        printf("line=%d, %s\n", n, buf);
+        printf("nue=%d, %s\n", n, buf);
+        if (strncasecmp(buf, "GET", 3) == 0)
+        {
+            replyhtml(client);
+        }
     }
+    printf("all is readed\n");
+
+    close(client);
 }
 
 int main(int argc, const char *argv[])
