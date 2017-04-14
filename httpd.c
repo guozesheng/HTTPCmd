@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#define CMD_NUM 3
+char *_cmd[CMD_NUM] = {"/", "kodi", "shutdown"};
+
 void error_die(const char *sc)
 {
     perror(sc);
@@ -67,7 +70,7 @@ int readline(int sockfd, char *buf, int buflen)
     return idx;
 }
 
-int replyhtml(int client)
+int header(int client)
 {
     char buf[256];
 
@@ -79,29 +82,115 @@ int replyhtml(int client)
     send(client, buf, strlen(buf), 0);
     sprintf(buf, "\r\n");
     send(client, buf, strlen(buf), 0);
+
+    /*
     sprintf(buf, "<html>\r\n");
     send(client, buf, strlen(buf), 0);
     sprintf(buf, "<body>hello, world</body>\r\n");
     send(client, buf, strlen(buf), 0);
     sprintf(buf, "</html>\r\n");
     send(client, buf, strlen(buf), 0);
+    printf("%s\n", buf);
+    // */
+
+    /*
+    sprintf(buf, "<html>\r\n<body>hello, world</body>\r\n</html>\r\n");
+    send(client, buf, strlen(buf), 0);
+    printf("%s\n", buf);
+    // */
 
     return 0;
+}
+
+int indexcmd(char *pname)
+{
+    int idx, cmdidx;
+
+    while (*pname == ' ')
+    {
+        pname++;
+    }
+
+    for (cmdidx = 0; cmdidx < CMD_NUM; cmdidx++)
+    {
+        idx = 0;
+        while (*(pname + idx) != '\0')
+        {
+            printf("cmdidx=%d, c=%c\n", cmdidx, *(pname + idx));
+            if (*(pname + idx) == ' ')
+            {
+                return cmdidx;
+            }
+            printf("cmdidx=%d, c:c=%c:%c\n", cmdidx, *(pname + idx), *(_cmd[cmdidx] + idx));
+            if (*(pname + idx) != *(_cmd[cmdidx] + idx))
+            {
+                printf("NOT EQ!\n");
+                break;
+            }
+            idx++;
+        }
+        printf("cmd is 0000\n");
+    }
+
+    return -1;
+}
+
+void indexhtml(int client)
+{
+    FILE *fp = NULL;
+    char *buf;
+    int bufsize = 1024;
+
+    fp = fopen("www/index.html", "r");
+    if (fp == NULL)
+    {
+        error_die("fopen");
+    }
+
+    buf = (char *)malloc(bufsize);
+    fgets(buf, bufsize, fp);
+    while (!feof(fp))
+    {
+        printf("send: %s\n", buf);
+        send(client, buf, strlen(buf), 0);
+        fgets(buf, bufsize, fp);
+    }
+
+    free(buf);
+    fclose(fp);
 }
 
 void accept_request(void *pclient)
 {
     int client = *(int *)pclient;
     char buf[256];
-    int n;
+    int n, idx;
+    int cmdidx;
+    char *pname;
 
     printf("in request sock=%d\n", client);
     while ((n=readline(client, buf, 256)) > 1)
     {
-        printf("nue=%d, %s\n", n, buf);
+        printf("num=%d, %s\n", n, buf);
         if (strncasecmp(buf, "GET", 3) == 0)
         {
-            replyhtml(client);
+            header(client);
+            //*
+            idx = 3;
+            pname = buf + idx;
+            cmdidx = indexcmd(pname);
+            printf("cmdinex=%d\n", cmdidx);
+            switch (cmdidx)
+            {
+                case 0:
+                    indexhtml(client);
+                    break;
+                case 1:
+                    break;
+                default:
+                    printf("404\n");
+            }
+            // */
         }
     }
     printf("all is readed\n");
